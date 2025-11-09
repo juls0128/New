@@ -1,3 +1,92 @@
+--// OctoSpy-Style Remote Listener GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "RemoteListener"
+gui.ResetOnSpawn = false
+gui.Parent = game.CoreGui
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 300, 0, 160)
+frame.Position = UDim2.new(0.5, -150, 0.5, -80)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+title.Text = "Remote Hook GUI"
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 18
+
+local box = Instance.new("TextBox", frame)
+box.Size = UDim2.new(1, -20, 0, 30)
+box.Position = UDim2.new(0, 10, 0, 40)
+box.PlaceholderText = "Enter Remote Path (e.g. game.ReplicatedStorage.Remote)"
+box.Text = ""
+box.TextColor3 = Color3.new(1,1,1)
+box.BackgroundColor3 = Color3.fromRGB(45,45,45)
+
+local startBtn = Instance.new("TextButton", frame)
+startBtn.Size = UDim2.new(0.45, 0, 0, 30)
+startBtn.Position = UDim2.new(0.05, 0, 0, 90)
+startBtn.Text = "Start"
+startBtn.BackgroundColor3 = Color3.fromRGB(60, 180, 75)
+startBtn.TextColor3 = Color3.new(1,1,1)
+startBtn.Font = Enum.Font.SourceSansBold
+startBtn.TextSize = 18
+
+local stopBtn = Instance.new("TextButton", frame)
+stopBtn.Size = UDim2.new(0.45, 0, 0, 30)
+stopBtn.Position = UDim2.new(0.5, 0, 0, 90)
+stopBtn.Text = "Stop"
+stopBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+stopBtn.TextColor3 = Color3.new(1,1,1)
+stopBtn.Font = Enum.Font.SourceSansBold
+stopBtn.TextSize = 18
+
+local log = Instance.new("TextLabel", frame)
+log.Size = UDim2.new(1, -20, 0, 30)
+log.Position = UDim2.new(0, 10, 0, 130)
+log.Text = "Status: Idle"
+log.TextColor3 = Color3.new(1,1,1)
+log.BackgroundTransparency = 1
+log.TextXAlignment = Enum.TextXAlignment.Left
+
+--// Script Logic
+local connection
+
+local function getRemote(path)
+	local success, remote = pcall(function()
+		return loadstring("return "..path)()
+	end)
+	return success and remote or nil
+end
+
+startBtn.MouseButton1Click:Connect(function()
+	if connection then
+		connection:Disconnect()
+	end
+	local remote = getRemote(box.Text)
+	if remote and remote:IsA("RemoteEvent") then
+		connection = remote.OnClientEvent:Connect(function(...)
+			print("[Remote Fired]:", remote.Name, ...)
+		end)
+		log.Text = "Status: Listening to "..remote.Name
+	else
+		log.Text = "Invalid Remote Path!"
+	end
+end)
+
+stopBtn.MouseButton1Click:Connect(function()
+	if connection then
+		connection:Disconnect()
+		connection = nil
+		log.Text = "Status: Stopped"
+	end
+end)
+
 _G.AutoCoin = true
 
 while _G.AutoCoin == true do
