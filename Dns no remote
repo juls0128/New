@@ -1,0 +1,13 @@
+_G.AutoCoin = true
+
+while _G.AutoCoin == true do
+task.wait(0.02)
+local args = {
+    [1] = {
+        ["Password"] = 290051417;
+        ["Text"] = "Bayad po manong!";
+        ["Character"] = workspace:WaitForChild("Passengers", 9e9):WaitForChild("Passenger #D<[{PE(B=I3&284~UD>D+T[OK3JSY4", 9e9);
+    };
+}
+
+game:GetService("ReplicatedStorage"):WaitForChild("Remotes", 9e9):WaitForChild("PassengerChatted", 9e9):FireServer(unpack(args))
