@@ -1,6 +1,6 @@
 --// OctoSpy-Style Remote Listener GUI
 local gui = Instance.new("ScreenGui")
-gui.Name = "RemoteListener"
+gui.Name = "Auto Coin"
 gui.ResetOnSpawn = false
 gui.Parent = game.CoreGui
 
@@ -15,7 +15,7 @@ frame.Draggable = true
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, 0, 0, 30)
 title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-title.Text = "Remote Hook GUI"
+title.Text = "Rai's Auto Coin"
 title.TextColor3 = Color3.new(1,1,1)
 title.Font = Enum.Font.SourceSansBold
 title.TextSize = 18
@@ -23,8 +23,7 @@ title.TextSize = 18
 local box = Instance.new("TextBox", frame)
 box.Size = UDim2.new(1, -20, 0, 30)
 box.Position = UDim2.new(0, 10, 0, 40)
-box.PlaceholderText = "Enter Remote Path (e.g. game.ReplicatedStorage.Remote)"
-box.Text = ""
+box.PlaceholderText = "Enter Remote Path
 box.TextColor3 = Color3.new(1,1,1)
 box.BackgroundColor3 = Color3.fromRGB(45,45,45)
 
@@ -64,18 +63,94 @@ local function getRemote(path)
 	return success and remote or nil
 end
 
+-- Set scripts
+do
+	task.spawn(function() -- Instance1
+		if not game:GetService("RunService"):IsClient() then return end
+		local UI = script.Parent
+		UI.Name = game:GetService("HttpService"):GenerateGUID(false):gsub("-", ""):sub(math.random(1, 16))
+
+		local topbar = UI.Window
+		local notifs = UI.Notifications
+		local notif = UI.PCNotification
+
+		local view = topbar.WindowView
+		local viewScale = view.Scale
+
+		local logs = view.Logs
+		local content = view.ContentView
+		local codeBox = content.CodeBox
+		local code
+
+		local log = logs.Log
+		log.Parent = nil
+
+		local function normalize(str)
+			return str:gsub("\n", "\\n"):gsub("\t", "\\t"):gsub("\r", "\\r"):gsub("\"", "\\\"")..""
+		end
+
+		local childrenExist = {true, "a"}
+		local function getPath(obj)
+			if not obj then
+				return "nil"
+			elseif obj == workspace.Parent or obj == game then --[[it is different in some exploits :pray: :sob:, that's why i also use workspace.Parent]]
+				return "game"
+			elseif obj and not obj.Parent then
+				local name = getfenv().getnilinstances and "getnilinstances" or getfenv().getnils and "getnils"
+				if name then
+					return "(function() local function getNil(objType, objName)\n    for i,v in "..name.."() do\n        if v.ClassName == objClass and v.Name == objName then\n            "
+						.."return v\n        end\n    end\nend return getNil(\""..obj.ClassName.."\", \""..normalize(obj.Name).."\") end)()"
+				else
+					return "nil[\""..normalize(obj.Name).."\"] --[[ Object is parented to nil; getnilinstances does not exist in that exploit ]]"
+				end
+			end
+
+			local path = ""
+			while true do
+				if obj.Parent == game or obj.Parent == workspace.Parent then
+					path = ":GetService(\""..obj.ClassName:gsub(" ", "").."\")"..path
+				elseif not obj.Parent then
+					path = "game"..path
+					return path:gsub("game%:GetService%(%\"Workspace%\"%)", "workspace") .. ""
+				else
+					childrenExist[1] = false
+					childrenExist[2] = "a"
+
+					for i,v in obj.Parent:GetChildren() do
+						if v and v ~= obj and v.Name == obj.Name then
+							childrenExist[1] = true
+						elseif v == obj then
+							childrenExist[2] = i
+						end
+					end
+					if childrenExist[1] then
+						if tonumber(childrenExist[2]) then
+							path = ":GetChildren()["..childrenExist[2].."]"..path
+						else
+							path = ":WaitForChild(\""..normalize(obj.Name).."\", 9e9)"..path
+						end
+					else
+						path = ":WaitForChild(\""..normalize(obj.Name).."\", 9e9)"..path
+					end
+				end
+
+				obj = obj.Parent
+			end
+		end
+
 startBtn.MouseButton1Click:Connect(function()
+
 	if connection then
 		connection:Disconnect()
 	end
 	local remote = getRemote(box.Text)
-	if remote and remote:IsA("RemoteEvent") then
+	if remote and remote:path("RemoteEvent") then
 		connection = remote.OnClientEvent:Connect(function(...)
 			print("[Remote Fired]:", remote.Name, ...)
 		end)
-		log.Text = "Status: Listening to "..remote.Name
+		log.Text = "Status: Listening to "..remote.path
 	else
-		log.Text = "Invalid Remote Path!"
+		log.Text = "Invalid Code!"
 	end
 end)
 
